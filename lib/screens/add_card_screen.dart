@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import '../data/card_repository.dart';
 import '../models/code_format.dart';
 import '../models/membership_card.dart';
+import '../theme/app_theme.dart';
 import '../utils/format_mapper.dart';
 import '../widgets/scanner_overlay.dart';
 
@@ -129,18 +130,17 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_showForm) {
+      return Scaffold(
+        backgroundColor: AppColors.canvas,
+        body: SafeArea(child: _buildScanner(context)),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit card' : (_showForm ? 'Card details' : 'Add a card')),
-        actions: [
-          if (!_showForm)
-            TextButton(
-              onPressed: () => setState(() => _showForm = true),
-              child: const Text('Enter manually', style: TextStyle(color: Colors.white)),
-            ),
-        ],
+        title: Text(_isEditing ? 'Edit card' : 'Card details'),
       ),
-      body: _showForm ? _buildForm(context) : _buildScanner(context),
+      body: _buildForm(context),
     );
   }
 
@@ -165,15 +165,110 @@ class _AddCardScreenState extends State<AddCardScreen> {
             ),
           ),
         ),
+        // Top toolbar: close, sensor status, torch.
+        Positioned(
+          top: 16,
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _GlassIconButton(
+                icon: Icons.close,
+                tooltip: 'Cancel',
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.cardSurface.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(color: AppColors.secondary, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'SENSOR ACTIVE',
+                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.8),
+                    ),
+                  ],
+                ),
+              ),
+              ValueListenableBuilder<MobileScannerState>(
+                valueListenable: _scannerController!,
+                builder: (context, state, _) {
+                  final torchOn = state.torchState == TorchState.on;
+                  return _GlassIconButton(
+                    icon: torchOn ? Icons.flash_on : Icons.flash_off,
+                    tooltip: 'Toggle torch',
+                    active: torchOn,
+                    onPressed: () => _scannerController!.toggleTorch(),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
         Positioned(
           bottom: 32,
           left: 0,
           right: 0,
-          child: Center(
-            child: Text(
-              'Line up your card\'s barcode or QR code',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white),
-            ),
+          child: Column(
+            children: [
+              Text(
+                'Align barcode or QR code within the frame',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Hold steady • Auto-captures instantly',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.7)),
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Material(
+                  color: AppColors.surfaceHigh.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(999),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: () => setState(() => _showForm = true),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.keyboard, size: 18, color: AppColors.primary),
+                          SizedBox(width: 8),
+                          Text(
+                            "Can't scan? Enter card numbers manually",
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.lock, size: 13, color: Colors.white.withValues(alpha: 0.6)),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Secure local processing on device',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ],
@@ -209,21 +304,28 @@ class _AddCardScreenState extends State<AddCardScreen> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _storeNameController,
-            decoration: const InputDecoration(labelText: 'Store name', border: OutlineInputBorder()),
+            decoration: const InputDecoration(
+              labelText: 'Store name',
+              prefixIcon: Icon(Icons.storefront_outlined, size: 20),
+            ),
             validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _codeValueController,
-            decoration: const InputDecoration(labelText: 'Card number / code', border: OutlineInputBorder()),
+            style: AppTheme.codeDisplay,
+            decoration: const InputDecoration(
+              labelText: 'Card number / code',
+              prefixIcon: Icon(Icons.tag, size: 20),
+            ),
             validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<CodeFormat>(
             value: _codeFormat,
-            decoration: const InputDecoration(labelText: 'Code format', border: OutlineInputBorder()),
+            decoration: const InputDecoration(labelText: 'Code format'),
             items: CodeFormat.values
                 .map((format) => DropdownMenuItem(value: format, child: Text(format.label)))
                 .toList(),
@@ -234,13 +336,13 @@ class _AddCardScreenState extends State<AddCardScreen> {
           const SizedBox(height: 12),
           TextFormField(
             controller: _nicknameController,
-            decoration: const InputDecoration(labelText: 'Nickname (optional)', border: OutlineInputBorder()),
+            decoration: const InputDecoration(labelText: 'Nickname (optional)'),
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _notesController,
-            decoration: const InputDecoration(labelText: 'Notes (optional)', border: OutlineInputBorder()),
+            decoration: const InputDecoration(labelText: 'Notes (optional)'),
             maxLines: 2,
           ),
           const SizedBox(height: 16),
@@ -273,4 +375,31 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
 extension _FirstOrNull<T> on List<T> {
   T? get firstOrNull => isEmpty ? null : first;
+}
+
+class _GlassIconButton extends StatelessWidget {
+  const _GlassIconButton({
+    required this.icon,
+    required this.onPressed,
+    this.tooltip,
+    this.active = false,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String? tooltip;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: active ? AppColors.tertiary : AppColors.cardSurface.withValues(alpha: 0.8),
+      shape: const CircleBorder(),
+      child: IconButton(
+        icon: Icon(icon, size: 20, color: active ? AppColors.onSurface : Colors.white),
+        tooltip: tooltip,
+        onPressed: onPressed,
+      ),
+    );
+  }
 }
