@@ -5,6 +5,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../data/card_repository.dart';
 import '../models/code_format.dart';
 import '../models/membership_card.dart';
+import '../theme/app_theme.dart';
 import '../widgets/code_renderer.dart';
 import '../widgets/logo_avatar.dart';
 import 'add_card_screen.dart';
@@ -108,17 +109,28 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                 Text(card.displayName, style: Theme.of(context).textTheme.headlineSmall),
                 if (card.nickname != null) Text(card.storeName, style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 24),
+                // "Code Display Pod" — deliberately breaks the dark theme
+                // with a solid white plate for maximum scanner contrast.
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12)],
+                    color: AppColors.codePodBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 24, offset: const Offset(0, 12))],
                   ),
-                  child: CodeRenderer(card: card, size: 260),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CodeRenderer(card: card, size: 260),
+                      const SizedBox(height: 12),
+                      SelectableText(
+                        card.codeValue,
+                        style: AppTheme.codeDisplay.copyWith(color: AppColors.codePodForeground),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
-                SelectableText(card.codeValue, style: Theme.of(context).textTheme.bodyLarge),
                 Text(card.codeFormat.label, style: Theme.of(context).textTheme.bodySmall),
                 if (card.notes != null && card.notes!.isNotEmpty) ...[
                   const SizedBox(height: 24),

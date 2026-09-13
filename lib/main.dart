@@ -6,6 +6,7 @@ import 'data/settings_repository.dart';
 import 'models/code_format.dart';
 import 'models/membership_card.dart';
 import 'screens/app_lock_screen.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,10 +28,8 @@ class MembershipWalletApp extends StatelessWidget {
     return MaterialApp(
       title: 'Membership Wallet',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.dark,
+      themeMode: ThemeMode.dark,
       home: AppLockGate(repository: CardRepository()),
     );
   }

@@ -65,9 +65,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> {
                 if (cards.isEmpty) {
                   return _EmptyState(hasQuery: _query.trim().isNotEmpty);
                 }
-                return ListView.separated(
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: cards.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final card = cards[index];
                     return CardTile(
