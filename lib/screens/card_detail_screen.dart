@@ -107,8 +107,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -217,15 +217,19 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Dedicated scan zone pod.
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  children: [
+              // Dedicated scan zone pod. Expanded so it absorbs whatever
+              // vertical space is left — this is what keeps the screen from
+              // needing to scroll when the code display switches to QR
+              // (square, much taller than the barcode's wide/short shape).
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    children: [
                     // Brightness status row (real, functional toggle).
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -293,15 +297,37 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                     const SizedBox(height: 12),
                     // "Code Display Pod" — deliberately breaks the dark theme
                     // with a solid white plate for maximum scanner contrast.
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.codePodBackground,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: CodeRenderer(card: card, size: 220, formatOverride: _displayFormat),
+                    // Expanded + LayoutBuilder: sized to exactly fill whatever
+                    // room is left in the pod, so switching to the (square,
+                    // taller) QR format never pushes the page into a scroll.
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, innerConstraints) {
+                          const codePadding = 20.0;
+                          final availableWidth = innerConstraints.maxWidth - codePadding * 2;
+                          final availableHeight = innerConstraints.maxHeight - codePadding * 2;
+                          double codeSize;
+                          if (_displayFormat == CodeFormat.qr) {
+                            codeSize = availableWidth < availableHeight ? availableWidth : availableHeight;
+                          } else {
+                            // BarcodeWidget renders at size x (size * 0.4).
+                            final sizeByHeight = availableHeight / 0.4;
+                            codeSize = availableWidth < sizeByHeight ? availableWidth : sizeByHeight;
+                          }
+                          codeSize = codeSize.clamp(60.0, 320.0);
+                          return Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            padding: const EdgeInsets.all(codePadding),
+                            decoration: BoxDecoration(
+                              color: AppColors.codePodBackground,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: CodeRenderer(card: card, size: codeSize, formatOverride: _displayFormat),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -340,25 +366,33 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                         ),
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               if (card.notes != null && card.notes!.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardSurface,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Notes', style: Theme.of(context).textTheme.headlineSmall),
-                      const SizedBox(height: 8),
-                      Text(card.notes!, style: Theme.of(context).textTheme.bodyMedium),
-                    ],
+                // Capped height (with its own scroll) so a long note can
+                // never squeeze the scan zone pod above below its minimum.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 140),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardSurface,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Notes', style: Theme.of(context).textTheme.headlineSmall),
+                          const SizedBox(height: 8),
+                          Text(card.notes!, style: Theme.of(context).textTheme.bodyMedium),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
