@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -24,11 +25,15 @@ class BackupService {
 
   /// Writes the export file and opens the OS share sheet so the user can
   /// save it wherever they choose (Files app, another device, etc.).
-  Future<void> exportAndShare(List<MembershipCard> cards) async {
+  ///
+  /// [sharePositionOrigin] anchors the iPad share popover; iOS throws a
+  /// PlatformException without it.
+  Future<void> exportAndShare(List<MembershipCard> cards, {Rect? sharePositionOrigin}) async {
     final file = await _writeExportFile(cards);
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'application/json')],
       subject: 'Membership Wallet backup',
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 

@@ -43,7 +43,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _export() async {
     setState(() => _busy = true);
     try {
-      await _backupService.exportAndShare(widget.repository.getAll());
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
+      await _backupService.exportAndShare(widget.repository.getAll(), sharePositionOrigin: origin);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
