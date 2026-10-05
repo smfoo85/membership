@@ -125,11 +125,18 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                       _CircleIconButton(
                         icon: Icons.edit_outlined,
                         tooltip: 'Edit',
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => AddCardScreen(repository: widget.repository, existingCard: card),
-                          ),
-                        ),
+                        onPressed: () async {
+                          // AddCardScreen edits the same MembershipCard
+                          // instance in place and saves it, but this screen
+                          // won't pick up those field changes on its own —
+                          // it needs an explicit rebuild once editing is done.
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => AddCardScreen(repository: widget.repository, existingCard: card),
+                            ),
+                          );
+                          if (mounted) setState(() {});
+                        },
                       ),
                       const SizedBox(width: 8),
                       _CircleIconButton(
